@@ -6,12 +6,13 @@ from Windows.Devices.Bluetooth.Advertisement import BluetoothLEAdvertisementFilt
 mac = "E3:AF:50:99:24:50"
 HOST = '10.200.162.83'
 PORT = 10000
+num = 0 #セントラル番号
 
 
 def detection_callback(device, advertisement_data):
     if ("E3:AF:50:99:24:50" == device.address):
         print(device.address, "RSSI:", device.rssi, advertisement_data, "UUIDS :" ,device.metadata["uuids"])
-        senddata = str(device.address) + "?" + str(device.rssi)
+        senddata = str(num) + "?" + str(device.address) + "?" + str(device.rssi)
         client.sendto(senddata.encode('utf-8'),(HOST,PORT))
 
 async def run():
