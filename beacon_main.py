@@ -4,7 +4,7 @@ from bleak import BleakScanner
 from Windows.Devices.Bluetooth.Advertisement import BluetoothLEAdvertisementFilter, BluetoothLEAdvertisement
 
 mac = "E3:AF:50:99:24:50"
-HOST = '10.200.162.83'
+HOST = '10.200.162.79'
 PORT = 10000
 num = 0 #セントラル番号
 
