@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import socket
+import queue
 
 #複数値のときデフォルト値は最後に書く
 def rssi2dist(rssi, urssi, N=20):
@@ -73,6 +74,16 @@ locations = [rec3, rec2, rec1]
 #辞書を用意 ビーコンid : [] 
 beacons = dict()
 
+#入場者用のキュー
+q = queue.Queue(5)
+q.put(1)
+q.put(2)
+q.put(3)
+q.put(4)
+q.put(5)
+
+#ビーコン番号
+beacon_num = dict()
 
 while True: #データ受け取りまで
     #メッセージ受信
@@ -94,6 +105,13 @@ while True: #データ受け取りまで
     #キーがない場合辞書を作成
     if msg[1] not in beacons:
         beacons[msg[1]] = {"1" : 0, "2" : 0, "3": 0}
+
+    #インデックス対応
+    if msg[1] not in beacon_num:
+        tmp = q.get()
+        beacon_num[msg[1]] = tmp
+        q.put(tmp)
+
     
 
     #ディクショナリが空だったら入れる
@@ -111,7 +129,8 @@ while True: #データ受け取りまで
     print("DB Datagrum : " + send_string)
     client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
     #Unity用のデータグラム android, RSSI, Beacon
-    send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(msg[1])
+    send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(beacon_num[msg[1]])
+    #send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(msg[1])
     print("Unity Datagrum : " + send_string)
     client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
 
@@ -132,5 +151,7 @@ while True: #データ受け取りまで
         client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
         #位置情報クリア
         beacons[msg[1]] = {"1" : 0, "2" : 0, "3": 0}
+
+    print("debug beacon : " + str(beacon_num))
 
     
