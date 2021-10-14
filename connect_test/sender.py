@@ -3,8 +3,8 @@ import time
 from datetime import datetime
 
 
-HOST = '192.168.128.102'
-PORT = 9000
+HOST = '10.205.122.34'
+PORT = 10000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 while True:

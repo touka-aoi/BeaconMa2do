@@ -40,19 +40,21 @@ def mse(x, locations , distances):
 def midpoint(*args):
     return np.mean(np.array(*args), axis=0)
 
+
+
 from scipy.optimize import minimize
 #start = time.time()
 
 M_SIZE = 8124 #データグラムサイズ
-HOST = '10.205.119.99' #受信IP
+HOST = '192.168.128.101' #受信IP
 PORT = 9000 #受信ポート番号
 
 urssi = 0 #単位RSSI
 
-SEND_HOST1 = '192.168.128.106' #送信IP
+SEND_HOST1 = '192.168.128.106' #送信IP 玉緒
 SEND_PORT1 = 9000 #送信ポート
-SEND_HOST2 = '192.168.128.107' #送信IP
-SEND_PORT2 = 9000 #送信ポート
+SEND_HOST2 = '192.168.128.107' #送信IP 西村
+SEND_PORT2 = 10000 #送信ポート
 
 send_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -68,6 +70,8 @@ d1 = 0
 d2 = 0
 d3 = 0
 locations = [rec3, rec2, rec1]
+#辞書をようい
+
 while True: #データ受け取りまで
     #print("test")
     dist_dict = {"1" : 0, "2" : 0, "3": 0}
@@ -76,6 +80,7 @@ while True: #データ受け取りまで
         message = sock.recv(M_SIZE)
         message = message.decode("utf-8")
         print(message)
+        #スマホ, ビーコン, 距離, rssi
         msg = message.split(':')
         #自分の送信データの場合無視
         if (msg[0] == "p"):
@@ -95,6 +100,16 @@ while True: #データ受け取りまで
         if (len(dist_list) == 3):
             break
         #print(f"dist list is {dist_list}")
+        #西村 9000
+        send_string = send_string = str(msg[0]) + ":" +  str(msg[1]) + ":" +  str(msg[3]) + ":" +  str(msg[2]) 
+        print("this is nishi" + send_string)
+        client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
+        #TamaWWWo 9000
+        send_string = str(msg[0]) + ":" +  str(msg[3] + ":" + str(msg[1]))
+        print("this is tamao" + send_string)
+        #デバグ用 単体送信
+        client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
+
 
     #初期位置を設定する
     initial_loc = midpoint(locations)   
@@ -105,8 +120,9 @@ while True: #データ受け取りまで
     send_string = "p" + ":" + str(result.x[0]) + ":" +  str(result.x[1])
     print(send_string)
 
-    #Unityへ送信
-    #client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
+    #Tamawo 10000
+    #西村 10000
+    client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT2))
     
 
 d1 = 1.084
