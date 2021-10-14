@@ -1,0 +1,41 @@
+import socket
+import csv
+import sqlite3
+import time
+import datetime
+
+
+M_SIZE =1024
+HOST = ''
+PORT = 9000
+dbname = "tonokaiyutest.db"
+
+sock =socket.socket(socket.AF_INET,socket.SOCK_DGRAM) #AF_INET→ipv4 SOCK_DGRAM→UDP
+sock.bind((HOST,PORT))
+
+
+while True: #データ受け取りまで
+    unix = time.time()
+    dt = datetime.datetime.fromtimestamp(unix)
+    message, cli_addr = sock.recvfrom(M_SIZE)
+    message = message.decode('utf-8')  #strで送られてくる
+    print(dt)
+
+    message =message.split(":") #送られてきたstrを?で分割
+    message.append(dt)
+    print(message) #確認用 この時点ではリスト型っぽい
+    
+    conn = sqlite3.connect(dbname)
+    cur = conn.cursor()
+
+    x = message[0]
+    #テーブルの作成
+    if not x== "p":
+        cur.execute("CREATE TABLE IF NOT EXISTS kaiyu (sentral text,beacon text, rssi text, distance text, ymdt text)")
+        cur.execute("INSERT INTO kaiyu VALUES (?,?,?,?,?)",(message))
+    else: 
+        cur.execute("CREATE TABLE IF NOT EXISTS coord (preparat text, xcoord text, ycoord text, ymdt text)")
+        cur.execute("INSERT INTO coord VALUES (?,?,?,?)",(message))
+
+    conn.commit()  #これがないと反映されん
+    conn.close()
