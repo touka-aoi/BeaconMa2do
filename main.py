@@ -126,6 +126,7 @@ q.put(5)
 beacon_num = dict()
 
 #5回無視用カウント
+cnt = 0
 
 while True: #データ受け取りまで
     #メッセージ受信
@@ -156,11 +157,16 @@ while True: #データ受け取りまで
     if msg[1] not in beacon_num:
         tmp = q.get()
         beacon_num[msg[1]] = tmp
+
+        #エラーだったらここから
         #5個以上のビーコンの時に起動する
         if (cnt >= 5):
-            del     beacon_num[get_key_from_value(beacon_num, tmp)]
+            del  beacon_num[get_key_from_value(beacon_num, tmp)]
         else:
             cnt += 1
+        #ここまで消してください
+
+
         q.put(tmp)
 
     #ディクショナリが空だったら入れる
