@@ -78,6 +78,9 @@ def mse(x, locations , distances):
 def midpoint(*args):
     return np.mean(np.array(*args), axis=0)
 
+def get_key_from_value(dict, needs):
+    key = [k for k, v in dict.items() if v == needs]
+    return str(key[0])
 
 
 from scipy.optimize import minimize
@@ -122,6 +125,8 @@ q.put(5)
 #ビーコン番号
 beacon_num = dict()
 
+#5回無視用カウント
+
 while True: #データ受け取りまで
     #メッセージ受信
     message = sock.recv(M_SIZE)
@@ -151,9 +156,12 @@ while True: #データ受け取りまで
     if msg[1] not in beacon_num:
         tmp = q.get()
         beacon_num[msg[1]] = tmp
+        #5個以上のビーコンの時に起動する
+        if (cnt >= 5):
+            del     beacon_num[get_key_from_value(beacon_num, tmp)]
+        else:
+            cnt += 1
         q.put(tmp)
-
-    
 
     #ディクショナリが空だったら入れる
     if ((beacons[msg[1]]["1"] == 0) and (int(msg[0]) == 1)):
