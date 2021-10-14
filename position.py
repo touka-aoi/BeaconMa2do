@@ -96,6 +96,9 @@ while True: #データ受け取りまで
     msg = message.split(':')
     #自分の送信データの場合無視
 
+    if (msg[1] == "1026"):
+        continue
+
     #エラー処理
     if (msg[0] != "1" and msg[0] != "2" and msg[0] != "3"):
         print("pass")
@@ -129,7 +132,7 @@ while True: #データ受け取りまで
     print("DB Datagrum : " + send_string)
     client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
     #Unity用のデータグラム android, RSSI, Beacon
-    send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(beacon_num[msg[1]])
+    send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(beacon_num[msg[1]]) + ":" + str(msg[1])
     #send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(msg[1])
     print("Unity Datagrum : " + send_string)
     client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
