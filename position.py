@@ -70,72 +70,67 @@ d1 = 0
 d2 = 0
 d3 = 0
 locations = [rec3, rec2, rec1]
-#辞書をようい
+#辞書を用意 ビーコンid : [] 
+beacons = dict()
+
 
 while True: #データ受け取りまで
+    #メッセージ受信
+    message = sock.recv(M_SIZE)
+    message = message.decode("utf-8")
+    print(message)
+    #スマホ, ビーコン, 距離, rssi
+
+    #分割
+    msg = message.split(':')
+    #自分の送信データの場合無視
+
+    #エラー処理
+    if (msg[0] != "1" and msg[0] != "2" and msg[0] != "3"):
+        print("pass")
+        continue
+
     #print("test")
-    dist_dict = {"1" : 0, "2" : 0, "3": 0}
-    dist_list = []
-    while True:
-        message = sock.recv(M_SIZE)
-        message = message.decode("utf-8")
-        print(message)
-        #スマホ, ビーコン, 距離, rssi
-        msg = message.split(':')
-        #自分の送信データの場合無視
-        if (msg[0] == "p"):
-            continue
-        #ディクショナリが空かつ1番だったら入れるよ
-        if ((dist_dict["1"] == 0) and (int(msg[0]) == 1)):
-            dist_list.append(float(msg[2]))
-            dist_dict["1"] = 1
-        elif ((dist_dict["2"] == 0) and (int(msg[0]) == 2)):
-            dist_list.append(float(msg[2]))
-            dist_dict["2"] = 1
-        elif ((dist_dict["3"] == 0) and (int(msg[0]) == 3)):
-            dist_list.append(float(msg[2]))
-            dist_dict["3"] = 1
-        #print("length is")
-        #print(len(dist_list))
-        if (len(dist_list) == 3):
-            break
-        #print(f"dist list is {dist_list}")
-        #西村 9000
-        send_string = send_string = str(msg[0]) + ":" +  str(msg[1]) + ":" +  str(msg[3]) + ":" +  str(msg[2]) 
-        print("this is nishi" + send_string)
-        client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
-        #TamaWWWo 9000
-        send_string = str(msg[0]) + ":" +  str(msg[3] + ":" + str(msg[1]))
-        print("this is tamao" + send_string)
-        #デバグ用 単体送信
-        client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
-
-
-    #初期位置を設定する
-    initial_loc = midpoint(locations)   
-    #最小二乗誤差を計算
-    result = minimize(mse, initial_loc, (locations, dist_list))
-    #print("the answer is:")
-    print(result.x)
-    send_string = "p" + ":" + str(result.x[0]) + ":" +  str(result.x[1])
-    print(send_string)
-
-    #Tamawo 10000
-    #西村 10000
-    client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT2))
+    #キーがない場合辞書を作成
+    if msg[1] not in beacons:
+        beacons[msg[1]] = {"1" : 0, "2" : 0, "3": 0}
     
 
-d1 = 1.084
-d2 = 1.135
-d3 = 3.055
+    #ディクショナリが空だったら入れる
+    if ((beacons[msg[1]]["1"] == 0) and (int(msg[0]) == 1)):
+        beacons[msg[1]]["1"] = float(msg[2])
+    elif ((beacons[msg[1]]["2"] == 0) and (int(msg[0]) == 2)):
+        beacons[msg[1]]["2"] = float(msg[2])
+    elif ((beacons[msg[1]]["3"] == 0) and (int(msg[0]) == 3)):
+        beacons[msg[1]]["3"] = float(msg[2])
+    print(beacons)
+    #print(len(dist_list))
 
-locations = [rec1, rec2, rec3]
-distances = [d1, d2, d3]
-#初期位置を設定する
-initial_loc = midpoint(locations)
+    #DB用のデータグラム all
+    send_string = str(msg[0]) + ":" +  str(msg[1]) + ":" +  str(msg[3]) + ":" +  str(msg[2]) 
+    print("DB Datagrum : " + send_string)
+    client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
+    #Unity用のデータグラム android, RSSI, Beacon
+    send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(msg[1])
+    print("Unity Datagrum : " + send_string)
+    client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
 
-result = minimize(mse, initial_loc, (locations, distances))
-print(result.x)
+    #位置がそろったときになる処理
+    if (beacons[msg[1]]["1"] != 0 and beacons[msg[1]]["2"] != 0 and beacons[msg[1]]["3"] != 0):
+        print(beacons)
+        dist_list = list(beacons[msg[1]].values())
+        print(dist_list)    
+        #初期位置を設定する
+        initial_loc = midpoint(locations)   
+        #最小二乗誤差を計算
+        result = minimize(mse, initial_loc, (locations, dist_list))
+        #print("the answer is:")
+        print(result.x)
+        send_string = "p" + ":" + msg[1] + ":" + str(result.x[0]) + ":" +  str(result.x[1])
+        print(send_string)
+        #DB position datagrum
+        client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
+        #位置情報クリア
+        beacons[msg[1]] = {"1" : 0, "2" : 0, "3": 0}
 
-#end = time.time() - start
-#print(end)
+    
