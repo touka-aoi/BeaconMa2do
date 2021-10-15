@@ -7,6 +7,7 @@ import csv
 import sqlite3
 import time
 import datetime
+import threading
 
 def retrive(msg):
     #DB名
@@ -78,13 +79,14 @@ def mse(x, locations , distances):
 def midpoint(*args):
     return np.mean(np.array(*args), axis=0)
 
+
 def get_key_from_value(dict, needs):
     key = [k for k, v in dict.items() if v == needs]
     return str(key[0])
 
 
 from scipy.optimize import minimize
-#start = time.time()
+counting = 0
 
 M_SIZE = 8124 #データグラムサイズ
 HOST = '192.168.128.101' #受信IP
@@ -104,9 +106,9 @@ client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock =socket.socket(socket.AF_INET,type=socket.SOCK_DGRAM)
 sock.bind((HOST,PORT))
 
-rec1 = [0, 3] #セントラルの座標1
-rec2 = [2, 0] #セントラルの座標2
-rec3 = [0, 0] #セントラルの座標2
+rec1 = [0, 0] #セントラルの座標1
+rec2 = [1.5, 2] #セントラルの座標2
+rec3 = [3, 0] #セントラルの座標2
 d1 = 0
 d2 = 0
 d3 = 0
@@ -115,12 +117,12 @@ locations = [rec3, rec2, rec1]
 beacons = dict()
 
 #入場者用のキュー
-q = queue.Queue(5)
-q.put(1)
-q.put(2)
-q.put(3)
-q.put(4)
-q.put(5)
+# q = queue.Queue(5)
+# q.put(1)
+# q.put(2)
+# q.put(3)
+# q.put(4)
+# q.put(5)
 
 #ビーコン番号
 beacon_num = dict()
@@ -128,16 +130,22 @@ beacon_num = dict()
 #5回無視用カウント
 cnt = 0
 
+#確認用tuple
+lis = list()
+
+
 while True: #データ受け取りまで
     #メッセージ受信
     message = sock.recv(M_SIZE)
     message = message.decode("utf-8")
-    print(message)
+#保存 すべてのメッセージ   print(message)
     #スマホ, ビーコン, 距離, rssi
 
     #分割
     msg = message.split(':')
     #自分の送信データの場合無視
+
+    counting += 1
 
     #フジセンのやつをスルーする
     if (msg[1] == "1026"):
@@ -155,19 +163,29 @@ while True: #データ受け取りまで
 
     #インデックス対応
     if msg[1] not in beacon_num:
-        tmp = q.get()
-        beacon_num[msg[1]] = tmp
+        for i in list(range(1,6)):
+            if i in beacon_num.values():
+                continue
+            else:
+                beacon_num[msg[1]] = i
 
-        #エラーだったらここから
-        #5個以上のビーコンの時に起動する
-        if (cnt >= 5):
-            del  beacon_num[get_key_from_value(beacon_num, tmp)]
-        else:
-            cnt += 1
-        #ここまで消してください
+    if (counting > 25):
+        lis.append(msg[1])
+        lis = set(lis)
+        lis = list(lis)
+        print(f"lis is : {lis}")
+        if (counting > 50):
+            st = set(beacon_num.keys()) - set(lis)
+            st = list(st)
+            print(f"is empyt : {st}")
+            if len(st) != 0:
+                for i in st:
+                    del beacon_num[i]
+            counting = 0
+            lis = list()
 
 
-        q.put(tmp)
+
 
     #ディクショナリが空だったら入れる
     if ((beacons[msg[1]]["1"] == 0) and (int(msg[0]) == 1)):
@@ -181,34 +199,41 @@ while True: #データ受け取りまで
 
     #DB用のデータグラム all
     send_string = str(msg[0]) + ":" +  str(msg[1]) + ":" +  str(msg[3]) + ":" +  str(msg[2]) 
-    print("DB Datagrum : " + send_string)
+
+#保存 DB用のやつ    print("DB Datagrum : " + send_string)
     retrive(send_string)
     #client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
     #Unity用のデータグラム android, RSSI, Beacon
     send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(beacon_num[msg[1]]) + ":" + str(msg[1])
     #send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(msg[1])
-    print("Unity Datagrum : " + send_string)
+
+#保存 Unity用のやつ      print("Unity Datagrum : " + send_string) 
+
     client.sendto(send_string.encode('utf-8'),(SEND_HOST1,SEND_PORT1))
 
     #位置がそろったときになる処理
     if (beacons[msg[1]]["1"] != 0 and beacons[msg[1]]["2"] != 0 and beacons[msg[1]]["3"] != 0):
         #print(beacons)
         dist_list = list(beacons[msg[1]].values())
-        print(dist_list)    
+#保存        print(dist_list)    
         #初期位置を設定する
         initial_loc = midpoint(locations)   
         #最小二乗誤差を計算
         result = minimize(mse, initial_loc, (locations, dist_list))
         #print("the answer is:")
-        print(result.x)
+#保存 位置デバッグ       print(result.x)
         send_string = "p" + ":" + msg[1] + ":" + str(result.x[0]) + ":" +  str(result.x[1])
-        print(send_string)
+
+        
+#保存 位置 print(send_string)
+        
         #DB position datagrum
         #client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
         retrive(send_string)
         #位置情報クリア
         beacons[msg[1]] = {"1" : 0, "2" : 0, "3": 0}
 
-    print("debug beacon : " + str(beacon_num))
+        print("debug beacon : " + str(beacon_num)) #保存 ビーコンナンバー
 
-    
+
+
