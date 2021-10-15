@@ -176,7 +176,7 @@ while True: #データ受け取りまで
         beacons[msg[1]]["2"] = float(msg[2])
     elif ((beacons[msg[1]]["3"] == 0) and (int(msg[0]) == 3)):
         beacons[msg[1]]["3"] = float(msg[2])
-    print(beacons)
+    #print(beacons)
     #print(len(dist_list))
 
     #DB用のデータグラム all
@@ -192,7 +192,7 @@ while True: #データ受け取りまで
 
     #位置がそろったときになる処理
     if (beacons[msg[1]]["1"] != 0 and beacons[msg[1]]["2"] != 0 and beacons[msg[1]]["3"] != 0):
-        print(beacons)
+        #print(beacons)
         dist_list = list(beacons[msg[1]].values())
         print(dist_list)    
         #初期位置を設定する
