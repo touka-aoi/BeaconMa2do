@@ -89,14 +89,14 @@ from scipy.optimize import minimize
 counting = 0
 
 M_SIZE = 8124 #データグラムサイズ
-HOST = '192.168.128.101' #受信IP
+HOST = '192.168.128.100' #受信IP
 PORT = 9000 #受信ポート番号
 
 urssi = 0 #単位RSSI
 
-SEND_HOST1 = '192.168.128.106' #送信IP 玉緒
+SEND_HOST1 = '192.168.128.102' #送信IP 玉緒
 SEND_PORT1 = 9000 #送信ポート
-SEND_HOST2 = '192.168.128.107' #送信IP 西村
+SEND_HOST2 = '192.168.128.100' #送信IP foxDot
 SEND_PORT2 = 10000 #送信ポート
 
 send_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -106,8 +106,9 @@ client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock =socket.socket(socket.AF_INET,type=socket.SOCK_DGRAM)
 sock.bind((HOST,PORT))
 
+
 rec1 = [0, 0] #セントラルの座標1
-rec2 = [1.5, 2] #セントラルの座標2
+rec2 = [0, 2] #セントラルの座標2
 rec3 = [3, 0] #セントラルの座標2
 d1 = 0
 d2 = 0
@@ -138,18 +139,18 @@ while True: #データ受け取りまで
     #メッセージ受信
     message = sock.recv(M_SIZE)
     message = message.decode("utf-8")
-#保存 すべてのメッセージ   print(message)
+    #print(message)
     #スマホ, ビーコン, 距離, rssi
 
     #分割
     msg = message.split(':')
     #自分の送信データの場合無視
+    if (msg[0] == "s"):
+        continue
 
     counting += 1
 
     #フジセンのやつをスルーする
-    if (msg[1] == "1026"):
-        continue
 
     #エラー処理
     if (msg[0] != "1" and msg[0] != "2" and msg[0] != "3"):
@@ -199,10 +200,13 @@ while True: #データ受け取りまで
 
     #DB用のデータグラム all
     send_string = str(msg[0]) + ":" +  str(msg[1]) + ":" +  str(msg[3]) + ":" +  str(msg[2]) 
-
-#保存 DB用のやつ    print("DB Datagrum : " + send_string)
+    #保存 DB用のやつ    print("DB Datagrum : " + send_string)
     retrive(send_string)
-    #client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))
+
+    #foxDot用のデータグラム all
+    send_string = "s" + ":" + str(msg[0]) + ":" +  str(msg[1]) 
+
+    client.sendto(send_string.encode('utf-8'),(SEND_HOST2,9000))
     #Unity用のデータグラム android, RSSI, Beacon
     send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(beacon_num[msg[1]]) + ":" + str(msg[1])
     #send_string = str(msg[0]) + ":" +  str(msg[3]) + ":" + str(msg[1])
@@ -225,7 +229,7 @@ while True: #データ受け取りまで
         send_string = "p" + ":" + msg[1] + ":" + str(result.x[0]) + ":" +  str(result.x[1])
 
         
-#保存 位置 print(send_string)
+        print(send_string)
         
         #DB position datagrum
         #client.sendto(send_string.encode('utf-8'),(SEND_HOST2,SEND_PORT1))

@@ -1,7 +1,7 @@
 import socket
 
 M_SIZE = 8192
-HOST = "10.205.119.99"
+HOST = ""
 PORT = 9000
 
 sock =socket.socket(socket.AF_INET,type=socket.SOCK_DGRAM)
